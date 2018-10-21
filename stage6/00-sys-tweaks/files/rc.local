@@ -1,0 +1,62 @@
+#!/bin/bash -e
+#
+# rc.local
+#
+# This script is executed at the end of each multiuser runlevel.
+# Make sure that the script will "exit 0" on success or any other
+# value on error.
+#
+# In order to enable or disable this script just change the execution
+# bits.
+#
+# By default this script does nothing.
+
+# Print the IP address
+_IP=$(hostname -I) || true
+if [ "$_IP" ]; then
+  printf "My IP address is %s\n" "$_IP"
+fi
+
+SETUPLOGFILE=/boot/teslausb-headless-setup.log
+
+function setup_log () {
+  echo "$( date ) : $1" >> "$SETUPLOGFILE"
+}
+
+# If the FINISHED file does not exist then we start setup
+if [ ! -e "/boot/TESLAUSB_SETUP_FINISHED" ]
+then
+  touch /boot/TESLAUSB_SETUP_STARTED
+  
+  setup_log "Moving main scripts from /boot/teslausb_setup_scripts to /root/bin"
+  
+  if [ -d "/root/bin/"]
+  then
+    setup_log "/root/bin dir exists."
+  else
+    mkdir /root/bin
+  fi
+  
+  mv /boot/teslausb_setup_scripts/* /root/bin/
+  chmod 755 /root/bin/*
+  
+  setup_log "Moving temporary scripts to /tmp"
+
+  mv /root/bin/*.sh /tmp/
+  chmod 755 /tmp/*.sh
+  
+  # Good to start setup at this point
+
+  if [ -e /root/bin/setup-teslausb-headless ]
+  then
+    # Mark all files executable just in case
+    chmod 755 /root/bin/*
+    setup_log "Starting setup."
+    # Start setup. This should take us all the way through to reboot
+    /root/bin/setup-teslausb-headless
+  fi
+fi
+
+
+
+
