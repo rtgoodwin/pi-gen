@@ -17,27 +17,100 @@ if [ "$_IP" ]; then
   printf "My IP address is %s\n" "$_IP"
 fi
 
-SETUPLOGFILE=/boot/teslausb-headless-setup.log
 
-function setup_log () {
-  echo "$( date ) : $1" >> "$SETUPLOGFILE"
+SETUP_LOGFILE=/boot/teslausb-headless-setup.log
+
+function setup_progress () {
+  if [ $HEADLESS_SETUP = "true" ]
+  then
+    echo "$( date ) : $1" >> "$SETUP_LOGFILE"
+  fi
+    echo $1
 }
 
-# If the FINISHED file does not exist then we start setup
+function get_script () {
+  local local_path="$1"
+  local name="$2"
+  local remote_path="${3:-}"
+  
+  curl -o "$local_path/$name" https://raw.githubusercontent.com/"$REPO"/teslausb/"$BRANCH"/"$remote_path"/"$name"
+  # wget -O "$local_path/$name" https://raw.githubusercontent.com/"$REPO"/teslausb/"$BRANCH"/"$remote_path"/"$name"
+  chmod +x "$local_path/$name"
+}
+
+function enable_wifi () {
+  setup_progress "Detecting whether to update wpa_supplicant.conf"
+  if [[ ! -z $SSID ]] && [[ ! -z $WIFIPASS ]]
+  then
+      if [ ! -e /boot/WIFI_ENABLED ]
+      then
+        setup_progress "Wifi variables specified, and no /boot/WIFI_ENABLED. Building wpa_supplicant.conf."
+        rm /etc/wpa_supplicant/wpa_supplicant.conf
+        cat << EOF >> "/etc/wpa_supplicant/wpa_supplicant.conf"
+ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev
+update_config=1
+network={
+  ssid="$SSID"
+  psk="$WIFIPASS"
+  key_mgmt=WPA-PSK
+}
+EOF
+    touch /boot/WIFI_ENABLED
+    setup_progress "Rebooting..."
+    reboot 
+    fi
+  fi
+}
+
+# Always grab the conf file in case changes are made or they want to restart setup
+# if [ -e "/boot/teslausb_setup_variables.conf" ] && [ ! -e /boot/TESLAUSB_SETUP_FINISHED]
+# then
+#   source "/boot/teslausb_setup_variables.conf"
+# else
+#   setup_progress "Setup appears to have already completed but you didn't provide a teslausb_setup_variables.conf."
+# fi
+
+# If the FINISHED file does not exist then we start setup. Otherwise passes on to normal loop
 if [ ! -e "/boot/TESLAUSB_SETUP_FINISHED" ]
 then
-  touch /boot/TESLAUSB_SETUP_STARTED
+  touch "/boot/TESLAUSB_SETUP_STARTED"
  
-  # Good to start setup at this point
+    # Grab the setup variables. Should still be there since setup isn't finished.
+    if [ -e "/boot/teslausb_setup_variables.conf" ]
+    then
+      source "/boot/teslausb_setup_variables.conf"
+    else
+      # No conf file found, can't complete setup
+      setup_progress "Setup appears to have already completed but you didn't provide a teslausb_setup_variables.conf."
+    fi
 
-  if [ -e /root/bin/setup-teslausb-headless ]
-  then
-    # Mark all files executable just in case
-    chmod 755 /root/bin/*
-    setup_log "Starting setup."
+    # check if we previously marked wifi as enabled
+    enable_wifi
+    # Good to start setup at this point
+
+    # Make the bin dir if needed to grab the setup script into it and persist
+    if [ ! -d "/root/bin" ]
+    then
+      mkdir "/root/bin"
+    fi
+
+    if [ ! -e "/root/bin/setup-teslausb" ] 
+    then
+      # Script doesn't exist, grab it. 
+      setup_progress "Grabbing main setup file."
+      get_script /root/bin setup-teslausb setup/pi
+    fi
+
+    setup_progress "Starting setup."
+
+    # Update the archiveserver value if needed in script on disk
+    sed -i'.bak' -e "s/TEMPARCHIVESERVER/$archiveserver/g" /etc/rc.local
+
     # Start setup. This should take us all the way through to reboot
-    /root/bin/setup-teslausb-headless
-  fi
+    /root/bin/setup-teslausb
+
+    # reboot for good measure, also restarts the rc.local script
+    reboot
 fi
 
 LOGFILE=/tmp/rc.local.log
@@ -47,7 +120,7 @@ function log () {
 }
 
 log "Launching archival script..."
-/root/bin/archiveloop &
+/root/bin/archiveloop TEMPARCHIVESERVER &
 log "All done"
 exit 0
 
