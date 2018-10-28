@@ -60,26 +60,45 @@ function enable_wifi () {
   fi
 }
 
-# Always grab the conf file in case changes are made or they want to restart setup
-# if [ -e "/boot/teslausb_setup_variables.conf" ] && [ ! -e /boot/TESLAUSB_SETUP_FINISHED]
-# then
-#   source "/boot/teslausb_setup_variables.conf"
-# else
-#   setup_progress "Setup appears to have already completed but you didn't provide a teslausb_setup_variables.conf."
-# fi
 
-# If the FINISHED file does not exist then we start setup. Otherwise passes on to normal loop
-if [ ! -e "/boot/TESLAUSB_SETUP_FINISHED" ]
+
+
+if [ -e "/boot/teslausb_setup_variables.conf" ]
+  then
+    if [ -e /root/bin/remountfs_rw ]
+    then
+      /root/bin/remountfs_rw
+    fi
+    dos2unix /boot/teslausb_setup_variables.conf
+    source "/boot/teslausb_setup_variables.conf"
+  fi
+
+# Check for headless setup
+if [ -z "${HEADLESS_SETUP+x}" ]
 then
+  HEADLESS_SETUP=false
+fi
+
+
+# This begins the Headless Setup loop 
+# If the FINISHED file does not exist then we start setup. Otherwise passes on to normal loop
+if [ ! -e "/boot/TESLAUSB_SETUP_FINISHED" ] && [ $HEADLESS_SETUP = "true" ]
+then
+  if [ -e /root/bin/remountfs_rw ]
+  then
+    /root/bin/remountfs_rw
+  fi
   touch "/boot/TESLAUSB_SETUP_STARTED"
  
     # Grab the setup variables. Should still be there since setup isn't finished.
+    # This is a double check to cover various scenarios of mixed headless/not headless setup attempts
     if [ -e "/boot/teslausb_setup_variables.conf" ]
     then
+      dos2unix /boot/teslausb_setup_variables.conf
       source "/boot/teslausb_setup_variables.conf"
     else
       # No conf file found, can't complete setup
-      setup_progress "Setup appears to have already completed but you didn't provide a teslausb_setup_variables.conf."
+      setup_progress "Setup appears not to have completed, but you didn't provide a teslausb_setup_variables.conf."
     fi
 
     # check if we previously marked wifi as enabled
