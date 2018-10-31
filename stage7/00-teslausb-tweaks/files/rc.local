@@ -21,10 +21,7 @@ fi
 SETUP_LOGFILE=/boot/teslausb-headless-setup.log
 
 function setup_progress () {
-  if [ $HEADLESS_SETUP = "true" ]
-  then
     echo "$( date ) : $1" >> "$SETUP_LOGFILE"
-  fi
     echo $1
 }
 
@@ -61,16 +58,15 @@ function enable_wifi () {
 }
 
 
-
-
 if [ -e "/boot/teslausb_setup_variables.conf" ]
   then
     if [ -e /root/bin/remountfs_rw ]
     then
       /root/bin/remountfs_rw
     fi
-    dos2unix /boot/teslausb_setup_variables.conf
-    source "/boot/teslausb_setup_variables.conf"
+    cp /boot/teslausb_setup_variables.conf /root/
+    dos2unix /root/teslausb_setup_variables.conf
+    source "/root/teslausb_setup_variables.conf"
   fi
 
 # Check for headless setup
@@ -79,6 +75,10 @@ then
   HEADLESS_SETUP=false
 fi
 
+
+# check if we previously marked wifi as enabled
+enable_wifi
+# Good to start setup at this point
 
 # This begins the Headless Setup loop 
 # If the FINISHED file does not exist then we start setup. Otherwise passes on to normal loop
@@ -94,16 +94,15 @@ then
     # This is a double check to cover various scenarios of mixed headless/not headless setup attempts
     if [ -e "/boot/teslausb_setup_variables.conf" ]
     then
-      dos2unix /boot/teslausb_setup_variables.conf
-      source "/boot/teslausb_setup_variables.conf"
+      cp /boot/teslausb_setup_variables.conf /root/
+      dos2unix /root/teslausb_setup_variables.conf
+      source "/root/teslausb_setup_variables.conf"
     else
       # No conf file found, can't complete setup
       setup_progress "Setup appears not to have completed, but you didn't provide a teslausb_setup_variables.conf."
     fi
 
-    # check if we previously marked wifi as enabled
-    enable_wifi
-    # Good to start setup at this point
+
 
     # Make the bin dir if needed to grab the setup script into it and persist
     if [ ! -d "/root/bin" ]
@@ -113,6 +112,8 @@ then
 
     if [ ! -e "/root/bin/setup-teslausb" ] 
     then
+      REPO=${REPO:-cimryan}
+      BRANCH=${BRANCH:-master}
       # Script doesn't exist, grab it. 
       setup_progress "Grabbing main setup file."
       get_script /root/bin setup-teslausb setup/pi
@@ -135,10 +136,16 @@ LOGFILE=/tmp/rc.local.log
 function log () {
   echo "$( date ) ${1}" >> "$LOGFILE"
 }
-
-log "Launching archival script..."
-/root/bin/archiveloop TEMPARCHIVESERVER &
-log "All done"
+if [ -e "/root/bin/archiveloop" ]
+then
+  log "Launching archival script..."
+  /root/bin/archiveloop TEMPARCHIVESERVER &
+  log "All done"
+else
+  echo "Setup doesn't seem to have completed, there is no /root/bin/archiveloop."
+  echo "Try re-running /root/bin/setup-teslausb (re-downloading if needed),"
+  echo "or export HEADLESS=true and run /etc/rc.local if you want to run automatic setup."
+fi
 exit 0
 
 

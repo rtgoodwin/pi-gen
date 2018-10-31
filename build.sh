@@ -110,6 +110,9 @@ run_stage(){
 				run_sub_stage
 			fi
 		done
+		# PREV_ROOTFS_DIR="${ROOTFS_DIR}"
+		# PREV_STAGE="${STAGE}"
+		# PREV_STAGE_DIR="${STAGE_DIR}"
 	fi
 	unmount "${WORK_DIR}/${STAGE}"
 	PREV_STAGE="${STAGE}"
