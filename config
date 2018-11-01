@@ -1,2 +1,2 @@
-IMG_NAME=teslausb_headless
-IMG_DATE=teslausb_image
+IMG_NAME=headless
+IMG_DATE=teslausb-image
