@@ -126,6 +126,7 @@ then
 
     # Start setup. This should take us all the way through to reboot
     /root/bin/setup-teslausb
+    /root/configure.sh
 
     # reboot for good measure, also restarts the rc.local script
     reboot
