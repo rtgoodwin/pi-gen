@@ -37,6 +37,7 @@ EOF
 		fi
 		if [ -d "${i}-patches" ]; then
 			log "Begin ${SUB_STAGE_DIR}/${i}-patches"
+			echo "STAGE_WORK_DIR=${STAGE_WORK_DIR}"
 			pushd "${STAGE_WORK_DIR}" > /dev/null
 			if [ "${CLEAN}" = "1" ]; then
 				rm -rf .pc
@@ -86,6 +87,7 @@ run_stage(){
 	unmount "${WORK_DIR}/${STAGE}"
 	STAGE_WORK_DIR="${WORK_DIR}/${STAGE}"
 	ROOTFS_DIR="${STAGE_WORK_DIR}"/rootfs
+	echo "ROOTFS_DIR=${STAGE_WORK_DIR}/rootfs"
 	if [ ! -f SKIP_IMAGES ]; then
 		if [ -f "${STAGE_DIR}/EXPORT_IMAGE" ]; then
 			EXPORT_DIRS="${EXPORT_DIRS} ${STAGE_DIR}"
@@ -108,6 +110,9 @@ run_stage(){
 				run_sub_stage
 			fi
 		done
+		# PREV_ROOTFS_DIR="${ROOTFS_DIR}"
+		# PREV_STAGE="${STAGE}"
+		# PREV_STAGE_DIR="${STAGE_DIR}"
 	fi
 	unmount "${WORK_DIR}/${STAGE}"
 	PREV_STAGE="${STAGE}"
