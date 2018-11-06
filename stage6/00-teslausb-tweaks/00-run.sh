@@ -1,5 +1,15 @@
 #!/bin/bash -e
+touch "${ROOTFS_DIR}/boot/ssh"
+install -m 755 files/rc.local		"${ROOTFS_DIR}/etc/"
+install -m 755 files/stage_flash    "${ROOTFS_DIR}/etc/"
+install -m 666 files/teslausb_setup_variables.conf.sample    "${ROOTFS_DIR}/boot/"
+install -m 666 files/wpa_supplicant.conf.sample    "${ROOTFS_DIR}/boot/"
+install -d "${ROOTFS_DIR}/root/bin"
+install -m 755 files/enable_wifi.sh "${ROOTFS_DIR}/root/bin"
 
+# install -m 755 files/teslausb_setup_scripts/bin/* "${ROOTFS_DIR}/root/bin/"
+# install -d "${ROOTFS_DIR}/root/bin/tmp"
+# install -m 755 files/teslausb_setup_scripts/tmp/* "${ROOTFS_DIR}/root/bin/tmp/"
 
 # on_chroot << EOF
 # systemctl disable hwclock.sh

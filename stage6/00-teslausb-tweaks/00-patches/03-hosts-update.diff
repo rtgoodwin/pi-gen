@@ -1,5 +1,5 @@
---- stage7/rootfs/etc/hosts
-+++ stage7/rootfs/etc/hosts
+--- stage6/rootfs/etc/hosts
++++ stage6/rootfs/etc/hosts
 @@ -3,4 +3,5 @@
  ff02::1		ip6-allnodes
  ff02::2		ip6-allrouters
