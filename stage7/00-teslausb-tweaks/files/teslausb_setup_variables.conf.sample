@@ -8,6 +8,9 @@
 #
 ######################################################################
 
+# Choose the archive system you're going to use. The default is
+# CIFS, i.e. Windows/Mac file sharing. 
+export ARCHIVE_SYSTEM=cifs
 # Default variables for CIFS (Windows/Mac file sharing) setup
 export archiveserver=your_archive_name_or_ip
 export sharename=your_archive_share_name
